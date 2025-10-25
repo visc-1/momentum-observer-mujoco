@@ -32,12 +32,12 @@
   <link name="base_link">
     <visual>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/base.dae"/>
+        <mesh filename="base.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/base.stl"/>
+        <mesh filename="base.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -57,12 +57,12 @@
   <link name="shoulder_link">
     <visual>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/shoulder.dae"/>
+        <mesh filename="shoulder.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/shoulder.stl"/>
+        <mesh filename="shoulder.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -82,12 +82,12 @@
   <link name="upper_arm_link">
     <visual>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/upperarm.dae"/>
+        <mesh filename="upperarm.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/upperarm.stl"/>
+        <mesh filename="upperarm.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -107,12 +107,12 @@
   <link name="forearm_link">
     <visual>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/forearm.dae"/>
+        <mesh filename="forearm.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/forearm.stl"/>
+        <mesh filename="forearm.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -132,12 +132,12 @@
   <link name="wrist_1_link">
     <visual>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/wrist1.dae"/>
+        <mesh filename="wrist1.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/wrist1.stl"/>
+        <mesh filename="wrist1.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -157,12 +157,12 @@
   <link name="wrist_2_link">
     <visual>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/wrist2.dae"/>
+        <mesh filename="wrist2.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/wrist2.stl"/>
+        <mesh filename="wrist2.stl"/>
       </geometry>
     </collision>
     <inertial>
@@ -182,12 +182,12 @@
   <link name="wrist_3_link">
     <visual>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/wrist3.dae"/>
+        <mesh filename="wrist3.dae"/>
       </geometry>
     </visual>
     <collision>
       <geometry>
-        <mesh filename="/home/nickstu/repo/ddp_solver/robot/ur10/wrist3.stl"/>
+        <mesh filename="wrist3.stl"/>
       </geometry>
     </collision>
     <inertial>

@@ -173,9 +173,9 @@ int main(int argc, char** argv)
             //print_vector("q_current", q_current);
             //print_vector("qd_current", qd_current);
 
-            //pinocchio::rnea(pin_model, pin_data, q_current, qd_current, Eigen::VectorXd::Zero(pin_model.nv));
-            //pinocchio::crba(pin_model, pin_data, q_current);
-            //pin_data.M.triangularView<Eigen::StrictlyLower>() = pin_data.M.transpose().triangularView<Eigen::StrictlyLower>();
+            pinocchio::rnea(pin_model, pin_data, q_current, qd_current, Eigen::VectorXd::Zero(pin_model.nv));
+            pinocchio::crba(pin_model, pin_data, q_current);
+            pin_data.M.triangularView<Eigen::StrictlyLower>() = pin_data.M.transpose().triangularView<Eigen::StrictlyLower>();
             ////// Calcola la coppia del controllore PD
             //Eigen::VectorXd tau_fb = Kp * (q_desired - q_current) + Kd * (qd_desired - qd_current);
             //

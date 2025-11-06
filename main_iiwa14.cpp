@@ -42,7 +42,7 @@ static int framerate = 60.0;
 
 int main(int argc, char** argv)
 {
-    // Load MuJoCo UR10 scene
+    // Load MuJoCo scene
     std::string scene_path = "../robot/kuka_iiwa_14/scene.xml";
     
     std::cout << "Loading scene from: " << scene_path << std::endl;

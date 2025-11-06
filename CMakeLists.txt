@@ -17,7 +17,7 @@ find_package(pinocchio REQUIRED)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 
-# UR10 MuJoCo
-add_executable(main_ur10 main_ur10.cpp MujocoUI.cpp)
-target_include_directories(main_ur10 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${EIGEN3_INCLUDE_DIR})
-target_link_libraries(main_ur10 pinocchio::pinocchio mujoco::mujoco glfw)
+# iiwa14 MuJoCo
+add_executable(main_iiwa14 main_iiwa14.cpp MujocoUI.cpp)
+target_include_directories(main_iiwa14 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${EIGEN3_INCLUDE_DIR})
+target_link_libraries(main_iiwa14 pinocchio::pinocchio mujoco::mujoco glfw)

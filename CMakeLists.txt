@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(ddp_solver)
+project(momentum-observer-mujoco)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
@@ -19,5 +19,5 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 
 # iiwa14 MuJoCo
 add_executable(main_iiwa14 main_iiwa14.cpp MujocoUI.cpp)
-target_include_directories(main_iiwa14 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${EIGEN3_INCLUDE_DIR})
-target_link_libraries(main_iiwa14 pinocchio::pinocchio mujoco::mujoco glfw)
+target_include_directories(main_iiwa14 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${EIGEN3_INCLUDE_DIR} ${pinocchio_INCLUDE_DIRS})
+target_link_libraries(main_iiwa14 ${pinocchio_LIBRARIES} mujoco::mujoco glfw)

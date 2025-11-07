@@ -5,6 +5,11 @@
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/algorithm/compute-all-terms.hpp>
 
+
+// Eigen
+#include <Eigen/Dense>
+
+
 #include <mujoco/mujoco.h>
 #include "MujocoUI.hpp"
 #include <iostream>
@@ -13,8 +18,7 @@
 
 
 
-// Eigen
-#include <Eigen/Dense>
+
 
 
 // Funzione per stampare vettori Eigen in modo pulito
@@ -114,8 +118,8 @@ int main(int argc, char** argv)
 
 
     // Guadagni del controllore PD
-    double Kp = 100;
-    double Kd = 20;
+    double Kp = 10;
+    double Kd = 2;
 
     for (int i = 0; i < mj_model_ptr->nq; i++) {
         mj_data_ptr->qpos[i] = A[i] * sin(phi);
@@ -176,16 +180,16 @@ int main(int argc, char** argv)
             pinocchio::rnea(pin_model, pin_data, q_current, qd_current, Eigen::VectorXd::Zero(pin_model.nv));
             pinocchio::crba(pin_model, pin_data, q_current);
             pin_data.M.triangularView<Eigen::StrictlyLower>() = pin_data.M.transpose().triangularView<Eigen::StrictlyLower>();
-            ////// Calcola la coppia del controllore PD
-            //Eigen::VectorXd tau_fb = Kp * (q_desired - q_current) + Kd * (qd_desired - qd_current);
-            //
-            //// Coppia totale da applicare (PD + compensazione gravità)
-            //Eigen::VectorXd tau_cmd = pin_data.nle + M * (tau_fb + qdd_desired);
-            ////std::cout << "size g: " << g.size() << " size mujoco u:" << mj_model_ptr->nu<< std::endl;
-            //// Applica le coppie agli attuatori di MuJoCo
-            //for (int i = 0; i < mj_model_ptr->nu; ++i) {
-            //    mj_data_ptr->ctrl[i] = tau_cmd[i];
-            //}
+            // Calcola la coppia del controllore PD
+            Eigen::VectorXd tau_fb = Kp * (q_desired - q_current) + Kd * (qd_desired - qd_current);
+            
+            // Coppia totale da applicare (PD + compensazione gravità)
+            Eigen::VectorXd tau_cmd = pin_data.nle + pin_data.M * (tau_fb + qdd_desired);
+            //std::cout << "size g: " << g.size() << " size mujoco u:" << mj_model_ptr->nu<< std::endl;
+            // Applica le coppie agli attuatori di MuJoCo
+            for (int i = 0; i < mj_model_ptr->nu; ++i) {
+                mj_data_ptr->ctrl[i] = tau_cmd[i];
+            }
 
             // --- 3.3 Avanzamento della Simulazione ---
             mj_step(mj_model_ptr, mj_data_ptr);

@@ -15,13 +15,26 @@
 #include <iostream>
 #include <memory>
 #include <filesystem>
+#include <fstream> // Aggiunto per std::ofstream
+#include <chrono>  // Aggiunto per il controllo del tempo
+#include <thread>  // Aggiunto per std::this_thread::sleep_for
 
 
+void append_vector_to_csv(const std::string& filename, const Eigen::VectorXd& vec, double current_time) {
+    const static Eigen::IOFormat CsvFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", "\n");
 
+    std::ofstream file;
+    file.open(filename, std::ios::app);
 
+    if (!file.is_open()) {
+        std::cerr << "ERRORE: Impossibile aprire il file " << filename << std::endl;
+        return;
+    }
 
+    file << current_time << ", ";
+    file << vec.transpose().format(CsvFormat) << std::endl;
+}
 
-// Funzione per stampare vettori Eigen in modo pulito
 void print_vector(const std::string& name, const Eigen::VectorXd& vec) {
     std::cout << name << ": [";
     for (int i = 0; i < vec.size(); ++i) {
@@ -29,7 +42,6 @@ void print_vector(const std::string& name, const Eigen::VectorXd& vec) {
     }
     std::cout << " ]" << std::endl;
 }
-
 
 // Funzione per mappare gli array di MuJoCo a Eigen
 template <typename EigenVector>
@@ -52,7 +64,6 @@ int main(int argc, char** argv)
     std::cout << "Loading scene from: " << scene_path << std::endl;
     std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
     
-    // Load MuJoCo scene (includes robot + ground plane)
     const int kErrorLength = 1024;
     char loadError[kErrorLength] = "";
     mjModel* mj_model_ptr = mj_loadXML(scene_path.c_str(), nullptr, loadError, kErrorLength);
@@ -63,7 +74,6 @@ int main(int argc, char** argv)
     }
     
     std::cout << "Successfully loaded iiwa14 scene with robot and ground" << std::endl;
-    
 
     // Carica il modello URDF in Pinocchio
     pinocchio::Model pin_model;
@@ -78,62 +88,41 @@ int main(int argc, char** argv)
     std::cout << "Number of DoFs (MuJoCo): " << mj_model_ptr->nv << std::endl;
     std::cout << "Number of DoFs (Pinocchio): " << pin_model.nv << std::endl;
     
-    std::cout << "\n--- MuJoCo Joints ---" << std::endl;
-    for (int i = 0; i < mj_model_ptr->njnt; ++i) {
-        const char* name = mj_id2name(mj_model_ptr, mjOBJ_JOINT, i);
-        if (name) { // mj_id2name restituisce nullptr se non c'è un nome
-            std::cout << "Joint " << i << ": " << name << std::endl;
-        }
-    }
-
-    std::cout << "\n--- Pinocchio Joints ---" << std::endl;
-    // I giunti in Pinocchio partono dall'indice 1 (l'indice 0 è 'universe')
-    for (pinocchio::JointIndex i = 0; i < pin_model.njoints; ++i) {
-        std::cout << "Joint " << i << ": " << pin_model.names[i] << std::endl;
-    }   
-
-    
-    
-    // Initialize MuJoCo UI
+    // --- Inizializza l'interfaccia UI ---
     MujocoUI* mujoco_ui = MujocoUI::getInstance(mj_model_ptr, mj_data_ptr);
 
-    // Defining joint space trajectory
+    // --- Definizione della traiettoria ---
     const double T_period = 5.0;
     const double t_start = 0.0;
-    const double t_end = 2.0 * T_period; // Due giri completi
-    
-    // In MuJoCo, t_step è il passo della simulazione
-    const double simulation_step = 0.001; 
 
-    // Parametri della sinusoide
-    Eigen::VectorXd A(7); // Vettore delle ampiezze
-    A << 0.5, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0;
+    Eigen::VectorXd A(pin_model.nv);
+    A << 0.1, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0;
 
-    const double phi = 0.0; // Fase
-    const double omega = 2.0 * M_PI / T_period; // Frequenza angolare
+    const double phi = 0.0;
+    const double omega = 2.0 * M_PI / T_period;
 
-    std::cout << "Parametri della traiettoria impostati." << std::endl;
-    print_vector("Ampiezze (A)", A);
-    std::cout << "Periodo (T): " << T_period << "s, Frequenza (omega): " << omega << " rad/s" << std::endl;
+    // --- Guadagni del controllore ---
+    double Kp = 5.0;
+    double Kd = 1.0;
 
-
-    // Guadagni del controllore PD
-    double Kp = 10;
-    double Kd = 2;
-
+    // --- Inizializzazione della posizione del robot ---
     for (int i = 0; i < mj_model_ptr->nq; i++) {
         mj_data_ptr->qpos[i] = A[i] * sin(phi);
         mj_data_ptr->qvel[i] = A[i] * omega * cos(phi);
-        mj_data_ptr->qacc[i] = -A[i] * omega * omega * sin(phi);
     }
-
-    // Forward kinematics to update positions
     mj_forward(mj_model_ptr, mj_data_ptr);
 
+    // --- Inizializzazione file CSV ---
+    std::ofstream file;
+    file.open("q.csv", std::ios::out);
+    file << "Time, q_1, q_2, q_3, q_4, q_5, q_6, q_7" << std::endl;
+    file.close();
 
-    // --- 3. Ciclo di Simulazione ---
-    
-    // Vettori Eigen per memorizzare i valori desiderati ad ogni passo
+    file.open("qd.csv", std::ios::out);
+    file << "Time, qd_1, qd_2, qd_3, qd_4, qd_5, qd_6, qd_7" << std::endl;
+    file.close();
+
+    // --- Ciclo di Simulazione ---
     Eigen::VectorXd q_desired(pin_model.nv);
     Eigen::VectorXd qd_desired(pin_model.nv);
     Eigen::VectorXd qdd_desired(pin_model.nv);
@@ -142,75 +131,52 @@ int main(int argc, char** argv)
     while (!mujoco_ui->windowShouldClose()) {
         mjtNum simstart = mj_data_ptr->time;
         while( mj_data_ptr->time - simstart < 1.0/framerate ){
-            auto loop_start = std::chrono::high_resolution_clock::now();
-
-            // --- 3.1 Calcolo della Traiettoria all'istante t ---
-            // Questa è la traduzione diretta delle tue formule MATLAB.
-            // Grazie a Eigen, possiamo usare operazioni vettoriali.
+            
+            // --- Calcolo Traiettoria Desiderata ---
             double t = mj_data_ptr->time;
             const double wt_phi = omega * t + phi;
-            const double sin_val = sin(wt_phi);
-            const double cos_val = cos(wt_phi);
-            q_desired = A * sin_val;
-            qd_desired = A * omega * cos_val;
-            qdd_desired = -A * omega * omega * sin_val;
-            // Stampiamo i valori desiderati al primo passo per verifica
-            //if (t == t_start) {
-            print_vector("q_desired", q_desired);
-            print_vector("qd_desired", qd_desired);
-            //}
-            //
-            
+            q_desired = A * sin(wt_phi);
+            qd_desired = A * omega * cos(wt_phi);
+            qdd_desired = -A * omega * omega * sin(wt_phi);
 
-            
-
+            // --- Acquisizione Stato Corrente ---
             Eigen::Map<const Eigen::VectorXd> q_current(mj_data_ptr->qpos, pin_model.nq);
             Eigen::Map<const Eigen::VectorXd> qd_current(mj_data_ptr->qvel, pin_model.nv);
-            //Eigen::VectorXd q_current(pin_model.nv);
-            //Eigen::VectorXd qd_current(pin_model.nv);
-            //// 2. Copia i dati da MuJoCo a Eigen elemento per elemento
-            //for (int i = 0; i < pin_model.nv; ++i) {
-            //    q_current(i) = mj_data_ptr->qpos[i];
-            //    qd_current(i) = mj_data_ptr->qvel[i];
-            //}
 
-            //print_vector("q_current", q_current);
-            //print_vector("qd_current", qd_current);
-
-            pinocchio::rnea(pin_model, pin_data, q_current, qd_current, Eigen::VectorXd::Zero(pin_model.nv));
+            // --- Calcolo Dinamica con Pinocchio ---
             pinocchio::crba(pin_model, pin_data, q_current);
             pin_data.M.triangularView<Eigen::StrictlyLower>() = pin_data.M.transpose().triangularView<Eigen::StrictlyLower>();
-            // Calcola la coppia del controllore PD
+            
+            // Calcola nle (C(q,q̇)q̇ + g(q))
+            pinocchio::nonLinearEffects(pin_model, pin_data, q_current, qd_current); 
+            
+            // --- Legge di Controllo (Feedback Linearization CORRETTA) ---
             Eigen::VectorXd tau_fb = Kp * (q_desired - q_current) + Kd * (qd_desired - qd_current);
             
-            // Coppia totale da applicare (PD + compensazione gravità)
-            Eigen::VectorXd tau_cmd = pin_data.nle + pin_data.M * (tau_fb + qdd_desired);
-            //std::cout << "size g: " << g.size() << " size mujoco u:" << mj_model_ptr->nu<< std::endl;
-            // Applica le coppie agli attuatori di MuJoCo
+            // La coppia di comando è SOLO la parte inerziale M*(q̈_des + feedback)
+            // MuJoCo si occuperà internamente dei termini non lineari (nle)
+            Eigen::VectorXd tau_cmd = pin_data.M * (qdd_desired + tau_fb);
+
+            // --- Applicazione del Controllo ---
             for (int i = 0; i < mj_model_ptr->nu; ++i) {
                 mj_data_ptr->ctrl[i] = tau_cmd[i];
             }
-
-            // --- 3.3 Avanzamento della Simulazione ---
-            mj_step(mj_model_ptr, mj_data_ptr);
-            std::cout << "time: " << mj_data_ptr->time << std::endl;
-
-            // --- (Opzionale) Gestione del tempo per esecuzione in tempo reale ---
-            // Se vuoi che la simulazione giri in tempo reale e non il più velocemente possibile.
-            auto loop_end = std::chrono::high_resolution_clock::now();
-            std::chrono::duration<double> loop_duration = loop_end - loop_start;
-            if (loop_duration.count() < simulation_step) {
-                std::this_thread::sleep_for(std::chrono::duration<double>(simulation_step - loop_duration.count()));
-            }
-            // Render
             
+            // --- Log dei dati ---
+            append_vector_to_csv("q.csv", q_current, t);
+            append_vector_to_csv("qd.csv", qd_current, t);
+            std::cout << "time: " << mj_data_ptr->time << std::endl;
+            // --- Avanzamento della Simulazione (singolo step) ---
+            mj_step(mj_model_ptr, mj_data_ptr);
+
         }
+        
+        // --- Renderizzazione ---
         mujoco_ui->render();
     }
+    
     std::cout << "\nSimulazione completata." << std::endl;
     print_vector("Posizione finale (q)", Eigen::Map<Eigen::VectorXd>(mj_data_ptr->qpos, mj_model_ptr->nq));
-
-
 
     // Cleanup
     delete mujoco_ui;

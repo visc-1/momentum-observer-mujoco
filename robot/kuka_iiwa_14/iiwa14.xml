@@ -1,8 +1,6 @@
 <mujoco model="iiwa14">
   <compiler angle="radian" meshdir="assets" autolimits="true"/>
 
-  <option integrator="implicitfast"/>
-
   <default>
     <default class="iiwa">
       <material specular="0.5" shininess="0.25"/>
@@ -159,13 +157,13 @@
   </contact>
 
   <actuator>
-    <general name="actuator1" joint="joint1" class="joint1"/>
-    <general name="actuator2" joint="joint2" class="joint2"/>
-    <general name="actuator3" joint="joint3" class="joint1"/>
-    <general name="actuator4" joint="joint4" class="joint2"/>
-    <general name="actuator5" joint="joint5" class="joint1"/>
-    <general name="actuator6" joint="joint6" class="joint2"/>
-    <general name="actuator7" joint="joint7" class="joint3"/>
+    <motor name="actuator1" joint="joint1" gear="1"/>
+    <motor name="actuator2" joint="joint2" gear="1"/>
+    <motor name="actuator3" joint="joint3" gear="1"/>
+    <motor name="actuator4" joint="joint4" gear="1"/>
+    <motor name="actuator5" joint="joint5" gear="1"/>
+    <motor name="actuator6" joint="joint6" gear="1"/>
+    <motor name="actuator7" joint="joint7" gear="1"/>
   </actuator>
 
   <keyframe>

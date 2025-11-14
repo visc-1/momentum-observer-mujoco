@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     const double t_start = 0.0;
 
     Eigen::VectorXd A(pin_model.nv);
-    A << 0.1, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0;
+    A << 1, 0.0, 0.0, 1, 0.0, 0.0, 0.0;
 
     const double phi = 0.0;
     const double omega = 2.0 * M_PI / T_period;
@@ -124,7 +124,7 @@ int main(int argc, char** argv)
 
     // --- Ciclo di Simulazione ---
     Eigen::VectorXd q_desired(pin_model.nv);
-    Eigen::VectorXd qd_desired(pin_model.nv);
+    Eigen::VectorXd qd_desired(pin_model.nv); 
     Eigen::VectorXd qdd_desired(pin_model.nv);
 
     std::cout << "\nInizio del ciclo di simulazione..." << std::endl;
@@ -148,14 +148,18 @@ int main(int argc, char** argv)
             pin_data.M.triangularView<Eigen::StrictlyLower>() = pin_data.M.transpose().triangularView<Eigen::StrictlyLower>();
             
             // Calcola nle (C(q,q̇)q̇ + g(q))
-            pinocchio::nonLinearEffects(pin_model, pin_data, q_current, qd_current); 
+            //pinocchio::nonLinearEffects(pin_model, pin_data, q_current, qd_current);
             
+            // Gravity compensation only
+            //pinocchio::rnea(pin_model, pin_data, q_current, Eigen::VectorXd::Zero(pin_model.nv), Eigen::VectorXd::Zero(pin_model.nv));
+            
+            pinocchio::rnea(pin_model, pin_data, q_current, qd_current, qdd_desired);
+
             // --- Legge di Controllo (Feedback Linearization CORRETTA) ---
             Eigen::VectorXd tau_fb = Kp * (q_desired - q_current) + Kd * (qd_desired - qd_current);
             
-            // La coppia di comando è SOLO la parte inerziale M*(q̈_des + feedback)
-            // MuJoCo si occuperà internamente dei termini non lineari (nle)
-            Eigen::VectorXd tau_cmd = pin_data.M * (qdd_desired + tau_fb);
+            
+            Eigen::VectorXd tau_cmd = pin_data.tau + pin_data.M*tau_fb;
 
             // --- Applicazione del Controllo ---
             for (int i = 0; i < mj_model_ptr->nu; ++i) {

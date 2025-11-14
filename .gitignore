@@ -1,3 +1,5 @@
 
-build/
+build/*
+!build/plot_q.py
+!build/plot_qd.py
 .vscode/

@@ -1,5 +1,5 @@
 
 build/*
-!build/plot_q.py
-!build/plot_qd.py
+!build/*.py
 .vscode/
+*.zip

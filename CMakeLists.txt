@@ -18,6 +18,6 @@ find_package(pinocchio REQUIRED)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR})
 
 # iiwa14 MuJoCo
-add_executable(main_iiwa14 main_iiwa14.cpp MujocoUI.cpp)
+add_executable(main_iiwa14 main_iiwa14.cpp MomentumObserver.cpp MujocoUI.cpp)
 target_include_directories(main_iiwa14 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${EIGEN3_INCLUDE_DIR} ${pinocchio_INCLUDE_DIRS})
 target_link_libraries(main_iiwa14 ${pinocchio_LIBRARIES} mujoco::mujoco glfw)

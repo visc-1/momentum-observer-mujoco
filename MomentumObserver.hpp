@@ -20,6 +20,7 @@ class MomentumObserver{
 
         Eigen::VectorXd update(const Eigen::VectorXd& q,const Eigen::VectorXd& qdot, const Eigen::VectorXd& tau);
         Eigen::VectorXd reconstructForceWrench(const Eigen::MatrixXd& J);
+        Eigen::VectorXd estimateContactPointInLinkReferenceFrame(const Eigen::VectorXd& F);
 
     protected:
 
@@ -32,7 +33,6 @@ class MomentumObserver{
         Eigen::VectorXd P0;
         bool is_zero_initialized;
         double dt;
-        Eigen::MatrixXd J_contact_point;
 };
 
 

@@ -97,8 +97,8 @@ int main(int argc, char** argv)
     const double omega = 2.0 * M_PI / T_period;
 
     // --- Guadagni del controllore ---
-    double Kp = 5.0;
-    double Kd = 1.0;
+    double Kp = 100.0;
+    double Kd = 20.0;
 
     
 
@@ -116,8 +116,20 @@ int main(int argc, char** argv)
     file << "Time, r_1, r_2, r_3, r_4, r_5, r_6, r_7" << std::endl;
     file.close();
 
+    file.open("nominal_r.csv", std::ios::out);
+    file << "Time, nr_1, nr_2, nr_3, nr_4, nr_5, nr_6, nr_7" << std::endl;
+    file.close();
+
+    file.open("error_r.csv", std::ios::out);
+    file << "Time, er_1, er_2, er_3, er_4, er_5, er_6, er_7" << std::endl;
+    file.close();
+
     file.open("wrench.csv", std::ios::out);
     file << "Time, f_1, f_2, f_3, f_4, f_5, f_6" << std::endl;
+    file.close();
+
+    file.open("contact_point.csv", std::ios::out);
+    file << "Time, p_1, p_2, p_3" << std::endl;
     file.close();
 
     // --- Ciclo di Simulazione ---
@@ -140,14 +152,15 @@ int main(int argc, char** argv)
 
     //Forza
     bool is_force_applied = false;
-    Eigen::Vector3d force_frame;
-    force_frame << 0.3, -0.5, 0.2;
-    Eigen::Vector3d neg_force_frame = -force_frame;
+    Eigen::VectorXd force_wrench_frame(6);
+    force_wrench_frame << 0.3, -0.5, 0.2, 0.0, 0.0, 0.0;
+    Eigen::VectorXd neg_force_wrench_frame(6);
+    neg_force_wrench_frame = -force_wrench_frame;
     int body_id = mj_name2id(mj_model_ptr, mjOBJ_BODY, "link7");
     const pinocchio::FrameIndex frame_id = pin_model.getFrameId("iiwa_link_7");
     Eigen::Vector3d point_of_application_world;// = pin_data.oMf[ee_frame_id].translation();
-    Eigen::Vector3d force_world;
-    Eigen::Vector3d neg_force_world;
+    Eigen::VectorXd force_wrench_world(6);
+    Eigen::VectorXd neg_force_wrench_world(6);
     Eigen::Matrix3d R_world_ee;
     //for (int i = 0; i < mj_model_ptr->nbody; ++i) {
     //  const char* body_name = mj_id2name(mj_model_ptr, mjOBJ_BODY, i);
@@ -192,7 +205,7 @@ int main(int argc, char** argv)
             if(t>=FORCE_START && t < FORCE_STOP){
                 //Applica forza al end-effector
                 if(is_force_applied)
-                    mj_applyFT(mj_model_ptr, mj_data_ptr, neg_force_world.data(), nullptr, point_of_application_world.data(), body_id, mj_data_ptr->qfrc_applied);
+                    mj_applyFT(mj_model_ptr, mj_data_ptr, neg_force_wrench_world.head(3).data(), neg_force_wrench_world.tail(3).data(), point_of_application_world.data(), body_id, mj_data_ptr->qfrc_applied);
                 
                 pinocchio::forwardKinematics(pin_model, pin_data, q_current);
                 pinocchio::updateFramePlacements(pin_model, pin_data);
@@ -200,22 +213,23 @@ int main(int argc, char** argv)
                 //mjtNum* ee_com_pos = mj_data_ptr->xipos + (ee_body_id * 3);
                 //point_of_application_world = Eigen::Vector3d(ee_com_pos[0], ee_com_pos[1], ee_com_pos[2]);
                 point_of_application_world = pin_data.oMf[frame_id].translation();
-                force_world = force_frame;
-                neg_force_world = neg_force_frame;
-                mj_applyFT(mj_model_ptr, mj_data_ptr, force_world.data(), nullptr, point_of_application_world.data(), body_id, mj_data_ptr->qfrc_applied);
+                force_wrench_world = force_wrench_frame;
+                neg_force_wrench_world = neg_force_wrench_frame;
+                mj_applyFT(mj_model_ptr, mj_data_ptr, force_wrench_world.head(3).data(), force_wrench_world.tail(3).data(), point_of_application_world.data(), body_id, mj_data_ptr->qfrc_applied);
                 
                 if (!is_force_applied) {
                     std::cout << "Force applied at second: " << t << std::endl;
                     is_force_applied = true;
                 }
                 std::cout<< "Punto di applicazione: "<< point_of_application_world <<std::endl;
-                std::cout<< "Forza nel frame del mondo: "<< force_world <<std::endl;
+                std::cout<< "Wrench della forza nel frame del mondo: "<< force_wrench_world <<std::endl;
             
             }
             
             if (is_force_applied && t >= FORCE_STOP) {
-                mj_applyFT(mj_model_ptr, mj_data_ptr, neg_force_world.data(), nullptr, point_of_application_world.data(), body_id, mj_data_ptr->qfrc_applied);
+                mj_applyFT(mj_model_ptr, mj_data_ptr, neg_force_wrench_world.head(3).data(), neg_force_wrench_world.tail(3).data(), point_of_application_world.data(), body_id, mj_data_ptr->qfrc_applied);
                 is_force_applied = false;
+                force_wrench_world.setZero();
                 std::cout << "Force removed at second: " << t << std::endl;
             }
 
@@ -245,8 +259,14 @@ int main(int argc, char** argv)
 
             Eigen::VectorXd r = observer.update(q_current, qd_current, tau_cmd);
             Eigen::VectorXd force_wrench = observer.reconstructForceWrench(J);
+            Eigen::VectorXd estimated_contact_point = observer.estimateContactPointInLinkReferenceFrame(force_wrench);
+            
+            Eigen::VectorXd nominal_r = J.transpose()*force_wrench_world;
 
             // --- Log dei dati ---
+            append_vector_to_csv("error_r.csv", nominal_r - r, t);
+            append_vector_to_csv("nominal_r.csv", nominal_r, t);
+            append_vector_to_csv("contact_point.csv", estimated_contact_point, t);
             append_vector_to_csv("wrench.csv", force_wrench, t);
             append_vector_to_csv("r.csv", r, t);
             append_vector_to_csv("q.csv", q_current, t);

@@ -136,7 +136,8 @@ int main(int argc, char** argv)
     Eigen::VectorXd q_desired(pin_model.nv);
     Eigen::VectorXd qd_desired(pin_model.nv);
     Eigen::VectorXd qdd_desired(pin_model.nv);
-    q_desired << 1.57, 0, 0, 1.57, 0.0, 0.0, 0.0;
+    q_desired << 0.785, 0.785, 0.0, -0.785, 0.0, 0.785, 0.0;
+    //q_desired << 1.57, 0, 0, 1.57, 0.0, 0.0, 0.0;
     qd_desired.setZero();
     qdd_desired.setZero();
 
@@ -221,8 +222,8 @@ int main(int argc, char** argv)
                     std::cout << "Force applied at second: " << t << std::endl;
                     is_force_applied = true;
                 }
-                std::cout<< "Punto di applicazione: "<< point_of_application_world <<std::endl;
-                std::cout<< "Wrench della forza nel frame del mondo: "<< force_wrench_world <<std::endl;
+                std::cout<< "Punto di applicazione:\n"<< point_of_application_world.transpose() <<std::endl;
+                std::cout<< "Wrench della forza nel frame del mondo:\n"<< force_wrench_world.transpose() <<std::endl;
             
             }
             
@@ -258,10 +259,25 @@ int main(int argc, char** argv)
             pinocchio::getFrameJacobian(pin_model, pin_data, frame_id, pinocchio::ReferenceFrame::LOCAL_WORLD_ALIGNED, J);
 
             Eigen::VectorXd r = observer.update(q_current, qd_current, tau_cmd);
-            Eigen::VectorXd force_wrench = observer.reconstructForceWrench(J);
-            Eigen::VectorXd estimated_contact_point = observer.estimateContactPointInLinkReferenceFrame(force_wrench);
-            
+
+            Eigen::VectorXd force_wrench = Eigen::VectorXd::Zero(6);
+            Eigen::VectorXd estimated_contact_point = Eigen::VectorXd::Zero(3);
+            if(r.norm()>=0.05){
+                force_wrench = observer.reconstructForceWrench(J);
+                estimated_contact_point = observer.estimateContactPointInLinkReferenceFrame(force_wrench);
+            }
             Eigen::VectorXd nominal_r = J.transpose()*force_wrench_world;
+
+
+            Eigen::FullPivLU<Eigen::MatrixXd> lu_decomp(J);
+            auto rank = lu_decomp.rank();
+            std::cout << "J rank: " << rank << std::endl;
+
+            Eigen::MatrixXd Jt = J.transpose();
+            Eigen::JacobiSVD<Eigen::MatrixXd> svd(Jt);
+            double cond = svd.singularValues()(0) / svd.singularValues()(svd.singularValues().size() - 1);
+            std::cout << "Condition Number of J_transpose: " << cond << std::endl;
+
 
             // --- Log dei dati ---
             append_vector_to_csv("error_r.csv", nominal_r - r, t);

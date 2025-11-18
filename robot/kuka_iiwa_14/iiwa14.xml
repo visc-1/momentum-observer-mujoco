@@ -5,7 +5,6 @@
     <default class="iiwa">
       <material specular="0.5" shininess="0.25"/>
       <joint axis="0 0 1"/>
-      <general gaintype="fixed" biastype="affine" gainprm="2000" biasprm="0 -2000 -200"/>
       <default class="joint1">
         <joint range="-2.96706 2.96706"/>
         <general ctrlrange="-2.96706 2.96706"/>

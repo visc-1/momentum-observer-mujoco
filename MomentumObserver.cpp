@@ -50,12 +50,12 @@ Eigen::VectorXd MomentumObserver::update(const Eigen::VectorXd& q, const Eigen::
 //pinocchio::computeJointJacobians(robot_model, robot_data, q);
 //pinocchio::getFrameJacobian(robot_model, robot_data, id_, pinocchio::ReferenceFrame::YOURCHOICE, J);
 Eigen::VectorXd MomentumObserver::reconstructForceWrench(const Eigen::MatrixXd& J){
-      return J.transpose().completeOrthogonalDecomposition().pseudoInverse() * last_r;
+      return J.transpose().completeOrthogonalDecomposition().solve(last_r);
 }
 
-//To use this you make the assumption that there are no momentum applied by the force
+//To use this you make the assumption that there are no momentum applied by the force wrench
 Eigen::VectorXd MomentumObserver::estimateContactPointInLinkReferenceFrame(const Eigen::VectorXd& F){
     Eigen::MatrixXd S = Eigen::MatrixXd::Zero(3,3);
     S << 0, -F[2], F[1], F[2], 0, -F[0], -F[1], F[0], 0;
-    return S.transpose().completeOrthogonalDecomposition().pseudoInverse() * F.tail(3);
+    return S.transpose().completeOrthogonalDecomposition().solve(F.tail(3));
 }

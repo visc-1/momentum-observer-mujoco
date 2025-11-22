@@ -16,11 +16,14 @@ class MomentumObserver{
             const Eigen::VectorXd& diagKo,
             const pinocchio::Model& robot_model, 
             const pinocchio::Data& robot_data,
-            double dt);
+            double dt,
+            int dim_buffer_r,
+            double epsilon);
 
         Eigen::VectorXd update(const Eigen::VectorXd& q,const Eigen::VectorXd& qdot, const Eigen::VectorXd& tau);
         Eigen::VectorXd reconstructForceWrench(const Eigen::MatrixXd& J);
         Eigen::VectorXd estimateContactPointInLinkReferenceFrame(const Eigen::VectorXd& F);
+        int collisionDetect();
 
     protected:
 
@@ -33,6 +36,10 @@ class MomentumObserver{
         Eigen::VectorXd P0;
         bool is_zero_initialized;
         double dt;
+        double epsilon;
+        Eigen::MatrixXd buffer;
+        Eigen::VectorXd max_r;
+        void updateBuffer(const Eigen::VectorXd& new_r);
 };
 
 

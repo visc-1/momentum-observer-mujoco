@@ -25,7 +25,7 @@
 #include <MomentumObserver.hpp>
 
 #define FORCE_START 2.0
-#define FORCE_STOP 10.0
+#define FORCE_STOP 5.0
 
 
 void append_vector_to_csv(const std::string& filename, const Eigen::VectorXd& vec, double current_time) {
@@ -124,12 +124,20 @@ int main(int argc, char** argv)
     file << "Time, er_1, er_2, er_3, er_4, er_5, er_6, er_7" << std::endl;
     file.close();
 
-    file.open("wrench.csv", std::ios::out);
+    file.open("reconstructed_wrench.csv", std::ios::out);
     file << "Time, f_1, f_2, f_3, f_4, f_5, f_6" << std::endl;
     file.close();
 
     file.open("contact_point.csv", std::ios::out);
     file << "Time, p_1, p_2, p_3" << std::endl;
+    file.close();
+
+    file.open("wrench.csv", std::ios::out);
+    file << "Time, f_1, f_2, f_3, f_4, f_5, f_6" << std::endl;
+    file.close();
+
+    file.open("collision_link.csv", std::ios::out);
+    file << "Time, l_i" << std::endl;
     file.close();
 
     // --- Ciclo di Simulazione ---
@@ -154,7 +162,7 @@ int main(int argc, char** argv)
     //Forza
     bool is_force_applied = false;
     Eigen::VectorXd force_wrench_frame(6);
-    force_wrench_frame << 0.3, -0.5, 0.2, 0.0, 0.0, 0.0;
+    force_wrench_frame << 0.3, -0.5, 0.2, 0.1, 0.0, 0.0;
     Eigen::VectorXd neg_force_wrench_frame(6);
     neg_force_wrench_frame = -force_wrench_frame;
     int body_id = mj_name2id(mj_model_ptr, mjOBJ_BODY, "link7");
@@ -170,9 +178,8 @@ int main(int argc, char** argv)
     //return 0;
 
     Eigen::VectorXd Ko_gains(pin_model.nv);
-    Ko_gains.setConstant(5.0);
-    MomentumObserver observer(Ko_gains, pin_model, pin_data, 0.001);
-
+    Ko_gains.setConstant(100);
+    MomentumObserver observer(Ko_gains, pin_model, pin_data, 0.001, 0.1/0.001,  1.0e-4);
 
     for (pinocchio::FrameIndex frame_id = 0; frame_id < pin_model.nframes; ++frame_id) {
         const auto& frame = pin_model.frames[frame_id];
@@ -222,8 +229,8 @@ int main(int argc, char** argv)
                     std::cout << "Force applied at second: " << t << std::endl;
                     is_force_applied = true;
                 }
-                std::cout<< "Punto di applicazione:\n"<< point_of_application_world.transpose() <<std::endl;
-                std::cout<< "Wrench della forza nel frame del mondo:\n"<< force_wrench_world.transpose() <<std::endl;
+                //std::cout<< "Punto di applicazione:\n"<< point_of_application_world.transpose() <<std::endl;
+                //std::cout<< "Wrench della forza nel frame del mondo:\n"<< force_wrench_world.transpose() <<std::endl;
             
             }
             
@@ -260,14 +267,15 @@ int main(int argc, char** argv)
 
             Eigen::VectorXd r = observer.update(q_current, qd_current, tau_cmd);
 
-            Eigen::VectorXd force_wrench = Eigen::VectorXd::Zero(6);
+            Eigen::VectorXd reconstructed_force_wrench = Eigen::VectorXd::Zero(6);
             Eigen::VectorXd estimated_contact_point = Eigen::VectorXd::Zero(3);
-            if(r.norm()>=0.05){
-                force_wrench = observer.reconstructForceWrench(J);
-                estimated_contact_point = observer.estimateContactPointInLinkReferenceFrame(force_wrench);
-            }
+            reconstructed_force_wrench = observer.reconstructForceWrench(J);
+            estimated_contact_point = observer.estimateContactPointInLinkReferenceFrame(reconstructed_force_wrench);
+            
             Eigen::VectorXd nominal_r = J.transpose()*force_wrench_world;
-
+            
+            int collisionLink = observer.collisionDetect();
+            std::cout << "collision detected at link: " <<  collisionLink << std::endl;
 
             Eigen::FullPivLU<Eigen::MatrixXd> lu_decomp(J);
             auto rank = lu_decomp.rank();
@@ -283,10 +291,15 @@ int main(int argc, char** argv)
             append_vector_to_csv("error_r.csv", nominal_r - r, t);
             append_vector_to_csv("nominal_r.csv", nominal_r, t);
             append_vector_to_csv("contact_point.csv", estimated_contact_point, t);
-            append_vector_to_csv("wrench.csv", force_wrench, t);
+            append_vector_to_csv("reconstructed_wrench.csv", reconstructed_force_wrench, t);
+            append_vector_to_csv("wrench.csv", force_wrench_world, t);
             append_vector_to_csv("r.csv", r, t);
             append_vector_to_csv("q.csv", q_current, t);
             append_vector_to_csv("qd.csv", qd_current, t);
+            Eigen::VectorXd collisionLinkVector(1);
+            collisionLinkVector[0] = collisionLink;
+            append_vector_to_csv("collision_link.csv",  collisionLinkVector, t);
+            
             std::cout << "time: " << mj_data_ptr->time << std::endl;
             // --- Avanzamento della Simulazione (singolo step) ---
             mj_step(mj_model_ptr, mj_data_ptr);

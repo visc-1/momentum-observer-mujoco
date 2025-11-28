@@ -53,13 +53,13 @@ fig, axes = plt.subplots(5, 1, figsize=(14, 20), sharex=True)
 # --- 4. PLOT DI OGNI SUBPLOT ---
 
 # Subplot 1:
-plot_subplot(axes[0], wrench, r"Forza Generalizzata $\mathcal{F}_{\text{ext}}$", "", "f_", "f")
+plot_subplot(axes[0], wrench, r"Forza Esterna $\mathcal{F}_{\text{ext}}$", "", "f_", "f")
 
 # Subplot 2:
 plot_subplot(axes[1], reconstructed_wrench, r"Forza Ricostruita dall'Osservatore $\hat{\mathcal{F}}_{\text{ext}}$", "", "f_", r"\hat{f}")
 
 # Subplot 3:
-plot_subplot(axes[2], tau_ext, r"Coppie Esterne", "Nm", "nr_", r"\tau")
+plot_subplot(axes[2], tau_ext, r"Coppie d'Interazione", "Nm", "nr_", r"\tau")
 
 # Subplot 4:
 plot_subplot(axes[3], r, "Residuo", "Nm", "r_", "r")

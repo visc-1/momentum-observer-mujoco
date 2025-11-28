@@ -4,7 +4,7 @@ Questo repository ospita l'implementazione C++ dell'**Osservatore basato sul Mom
 
 **Autore:** Francesco Viscione  
 **Relatore:** Prof. Giuseppe Oriolo  
-**Correlatore:** Dott. Nicola Scianca
+**Correlatore:** Dott. Nicola Scianca  
 **Università:** Sapienz Università di Roma - Dipartimento di Ingegneria Informatica, Automatica e Gestionale (DIAG)
 
 ## 📄 Documentazione

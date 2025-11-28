@@ -9,8 +9,6 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -funro
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(Eigen3 REQUIRED)
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 REQUIRED)
 find_package(mujoco REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(pinocchio REQUIRED)
